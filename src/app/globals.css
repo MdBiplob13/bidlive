@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 150 30% 99%;
+    --foreground: 158 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 158 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 158 30% 10%;
+
+    /* Bangladesh flag green */
+    --primary: 162 100% 21%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Warm marketplace accent (terracotta/gold) */
+    --secondary: 150 25% 95%;
+    --secondary-foreground: 162 60% 18%;
+
+    --muted: 150 16% 95%;
+    --muted-foreground: 158 12% 42%;
+
+    --accent: 16 90% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 78% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 38%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 150 16% 90%;
+    --input: 150 16% 90%;
+    --ring: 162 100% 25%;
+
+    --radius: 0.85rem;
+  }
+
+  .dark {
+    --background: 160 28% 7%;
+    --foreground: 150 20% 96%;
+
+    --card: 160 26% 10%;
+    --card-foreground: 150 20% 96%;
+
+    --popover: 160 26% 10%;
+    --popover-foreground: 150 20% 96%;
+
+    --primary: 160 70% 45%;
+    --primary-foreground: 160 40% 6%;
+
+    --secondary: 160 20% 16%;
+    --secondary-foreground: 150 20% 96%;
+
+    --muted: 160 18% 16%;
+    --muted-foreground: 150 12% 65%;
+
+    --accent: 16 85% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 60% 45%;
+    --success-foreground: 160 40% 6%;
+
+    --border: 160 18% 20%;
+    --input: 160 18% 20%;
+    --ring: 160 70% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  html[lang="bn"] body {
+    @apply font-bangla;
+  }
+}
+
+@layer utilities {
+  .container-tight {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* gradient mesh background for hero */
+  .hero-mesh {
+    background-image:
+      radial-gradient(at 12% 18%, hsl(var(--primary) / 0.18) 0px, transparent 50%),
+      radial-gradient(at 88% 10%, hsl(var(--accent) / 0.16) 0px, transparent 45%),
+      radial-gradient(at 70% 80%, hsl(var(--primary) / 0.12) 0px, transparent 50%);
+  }
+  .skeleton {
+    @apply relative overflow-hidden bg-muted;
+  }
+  .skeleton::after {
+    @apply absolute inset-0 -translate-x-full;
+    content: "";
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--foreground) / 0.05),
+      transparent
+    );
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.55);
+}

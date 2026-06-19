@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#e2e8e4"/>
+  <path d="M160 130h80v50h-80z" fill="#94a3a0"/>
+  <circle cx="200" cy="120" r="18" fill="#94a3a0"/>
+  <text x="200" y="220" font-family="sans-serif" font-size="16" fill="#64748b" text-anchor="middle">BidLive</text>
+</svg>
