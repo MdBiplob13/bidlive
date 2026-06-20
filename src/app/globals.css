@@ -85,6 +85,20 @@
   html[lang="bn"] body {
     @apply font-bangla;
   }
+
+  /* Clickable elements should show a pointer cursor (native buttons default to arrow) */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label[for],
+  select:not(:disabled),
+  option,
+  summary {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 @layer utilities {

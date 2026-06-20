@@ -26,6 +26,8 @@ export function AuthProvider({ children }) {
     await api.post("/auth/logout");
     qc.setQueryData(["me"], null);
     qc.clear();
+    // Hard navigation to home so all client state resets cleanly after logout
+    window.location.href = "/";
   };
 
   return (
