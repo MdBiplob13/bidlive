@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -14,10 +15,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Countdown from "./Countdown";
 import BidPanel from "./BidPanel";
+import AuctionAdminPanel from "./AuctionAdminPanel";
+import AuctionOwnerPanel from "./AuctionOwnerPanel";
 
 export default function AuctionDetail({ id }) {
   const { t, locale } = useLanguage();
-  const { isAuthed, user } = useAuth();
+  const { isAuthed, isAdmin, user } = useAuth();
   const router = useRouter();
   const [activeImg, setActiveImg] = useState(0);
 
@@ -49,6 +52,7 @@ export default function AuctionDetail({ id }) {
   const bids = data.bids || [];
   const images = a.images?.length ? a.images : [{ url: "/placeholder.svg" }];
   const sellerId = a.seller?._id || a.seller;
+  const isOwner = !!user && String(user._id) === String(sellerId);
   const num = (n) => (locale === "bn" ? toBanglaDigits(n) : n);
 
   const report = async () => {
@@ -103,8 +107,12 @@ export default function AuctionDetail({ id }) {
                 {bids.map((b) => (
                   <li key={b._id} className="flex items-center justify-between py-2.5 text-sm">
                     <span className="flex items-center gap-2">
-                      <Avatar className="size-7"><AvatarFallback>{b.bidder?.name?.[0] || "?"}</AvatarFallback></Avatar>
-                      {b.bidder?.name || "Bidder"}
+                      <Avatar className="size-7"><AvatarImage src={b.bidder?.avatar} /><AvatarFallback>{b.bidder?.name?.[0] || "?"}</AvatarFallback></Avatar>
+                      {b.bidder?._id ? (
+                        <Link href={`/users/${b.bidder._id}`} className="hover:text-primary hover:underline">{b.bidder?.name || "Bidder"}</Link>
+                      ) : (
+                        b.bidder?.name || "Bidder"
+                      )}
                       {b.type === "proxy" && <Badge variant="muted" className="text-[10px]">auto</Badge>}
                     </span>
                     <span className="font-bold text-primary">{formatTaka(b.amount, { locale })}</span>
@@ -126,15 +134,26 @@ export default function AuctionDetail({ id }) {
             </div>
           </div>
 
-          <BidPanel auction={a} />
+          {isAdmin ? (
+            <AuctionAdminPanel auction={a} />
+          ) : isOwner ? (
+            <>
+              <BidPanel auction={a} />
+              <AuctionOwnerPanel auction={a} />
+            </>
+          ) : (
+            <>
+              <BidPanel auction={a} />
 
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => (isAuthed ? watchMutation.mutate() : router.push(`/login?next=/auctions/${id}`))} disabled={watchMutation.isPending}>
-              <Heart className="size-4" /> {t("nav.watchlist")}
-            </Button>
-            <Button variant="outline" onClick={report}><Flag className="size-4" /> {locale === "bn" ? "রিপোর্ট" : "Report"}</Button>
-          </div>
+              {/* Actions */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => (isAuthed ? watchMutation.mutate() : router.push(`/login?next=/auctions/${id}`))} disabled={watchMutation.isPending}>
+                  <Heart className="size-4" /> {t("nav.watchlist")}
+                </Button>
+                <Button variant="outline" onClick={report}><Flag className="size-4" /> {locale === "bn" ? "রিপোর্ট" : "Report"}</Button>
+              </div>
+            </>
+          )}
 
           {/* Seller */}
           <div className="rounded-2xl border border-border bg-card p-5">
@@ -143,13 +162,17 @@ export default function AuctionDetail({ id }) {
               <Avatar className="size-11"><AvatarImage src={a.seller?.avatar} /><AvatarFallback>{a.seller?.name?.[0] || "S"}</AvatarFallback></Avatar>
               <div className="flex-1">
                 <p className="flex items-center gap-1 font-semibold">
-                  {a.seller?.name}
+                  {sellerId ? (
+                    <Link href={`/users/${sellerId}`} className="hover:text-primary hover:underline">{a.seller?.name}</Link>
+                  ) : (
+                    a.seller?.name
+                  )}
                   {a.seller?.isVerified && <ShieldCheck className="size-4 text-primary" />}
                 </p>
                 <p className="text-xs text-muted-foreground">{a.seller?.city || "Bangladesh"} · ⭐ {num(a.seller?.rating || 0)}</p>
               </div>
             </div>
-            {(!user || String(user._id) !== String(sellerId)) && (
+            {!isAdmin && !isOwner && (
               <Button variant="secondary" className="mt-3 w-full" onClick={() => (isAuthed ? contactSeller.mutate() : router.push(`/login?next=/auctions/${id}`))} disabled={contactSeller.isPending}>
                 <MessageSquare className="size-4" /> {locale === "bn" ? "বিক্রেতার সাথে যোগাযোগ" : "Contact seller"}
               </Button>

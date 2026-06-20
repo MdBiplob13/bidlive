@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Check, X, Star, Square, Gavel, User, Clock, Eye, Loader2 } from "lucide-react";
@@ -20,6 +20,7 @@ const STATUS_VARIANT = { pending: "muted", active: "success", sold: "default", e
 function AdminAuctionsInner() {
   const qc = useQueryClient();
   const { locale } = useLanguage();
+  const router = useRouter();
   const sp = useSearchParams();
   const [status, setStatus] = useState(sp.get("status") || "pending");
   const [page, setPage] = useState(1);
@@ -60,14 +61,18 @@ function AdminAuctionsInner() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {auctions.map((a) => (
-            <div key={a._id} className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
+            <div
+              key={a._id}
+              onClick={() => router.push(`/auctions/${a._id}`)}
+              className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+            >
               <div className="p-2.5 pb-0">
                 <ImageSlider images={a.images} alt={a.title} />
               </div>
 
               <div className="flex flex-1 flex-col gap-2.5 p-3.5">
                 <div className="flex items-start justify-between gap-2">
-                  <Link href={`/auctions/${a._id}`} className="line-clamp-2 font-semibold leading-snug hover:text-primary">
+                  <Link href={`/auctions/${a._id}`} onClick={(e) => e.stopPropagation()} className="line-clamp-2 font-semibold leading-snug hover:text-primary">
                     {a.title}
                   </Link>
                   {a.isFeatured && <Star className="size-4 shrink-0 fill-amber-400 text-amber-400" />}
@@ -100,7 +105,7 @@ function AdminAuctionsInner() {
                   </p>
                 </div>
 
-                <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
+                <div className="mt-auto flex flex-wrap gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
                   {a.status === "pending" && (
                     <>
                       <Button size="sm" disabled={action.isPending} onClick={() => action.mutate({ auctionId: a._id, action: "approve" })}>
