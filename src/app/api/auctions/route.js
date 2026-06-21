@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/db";
 import Auction from "@/models/Auction";
 import Category from "@/models/Category";
+import User from "@/models/User"; // registers the User schema so .populate("seller") works
 import { auctionSchema } from "@/lib/validations";
 import { requireUser } from "@/lib/auth";
 import { ok, created, fail, handler } from "@/lib/apiResponse";

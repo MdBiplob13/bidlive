@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import Bid from "@/models/Bid";
+import User from "@/models/User"; // registers the User schema so .populate("bidder") works
 import { requireUser } from "@/lib/auth";
 import { bidSchema } from "@/lib/validations";
 import { ok, fail, handler } from "@/lib/apiResponse";

@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import Auction from "@/models/Auction";
 import Bid from "@/models/Bid";
+import User from "@/models/User"; // registers schemas referenced by .populate()
+import Category from "@/models/Category";
 import { getCurrentUser, requireUser } from "@/lib/auth";
 import { ok, fail, handler } from "@/lib/apiResponse";
 import { settleAuction } from "@/lib/auctionEngine";

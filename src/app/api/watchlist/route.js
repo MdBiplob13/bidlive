@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/db";
 import Watchlist from "@/models/Watchlist";
 import Auction from "@/models/Auction";
+import User from "@/models/User"; // registers the User schema so nested .populate("seller") works
 import { requireUser } from "@/lib/auth";
 import { ok, handler } from "@/lib/apiResponse";
 

@@ -1,5 +1,7 @@
 import { connectDB } from "@/lib/db";
 import Auction from "@/models/Auction";
+import User from "@/models/User"; // registers schemas referenced by .populate()
+import Category from "@/models/Category";
 import { requireAdmin } from "@/lib/auth";
 import { logAdmin } from "@/lib/adminLog";
 import { notify } from "@/lib/notify";

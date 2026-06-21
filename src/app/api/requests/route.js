@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/db";
 import Request from "@/models/Request";
 import Category from "@/models/Category";
+import User from "@/models/User"; // registers the User schema so .populate("user") works
 import { requestSchema } from "@/lib/validations";
 import { requireUser } from "@/lib/auth";
 import { ok, created, fail, handler } from "@/lib/apiResponse";
