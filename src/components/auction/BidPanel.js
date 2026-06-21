@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Gavel, Zap, Loader2, ChevronRight } from "lucide-react";
+import { Gavel, Loader2, ChevronRight } from "lucide-react";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthProvider";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -23,17 +23,13 @@ export default function BidPanel({ auction }) {
   const minNext = auction.currentBid > 0 ? current + step : auction.startingPrice;
 
   const [amount, setAmount] = useState(minNext);
-  const [autoBid, setAutoBid] = useState(false);
-  const [maxAutoBid, setMaxAutoBid] = useState("");
 
   const isSeller = user && String(user._id) === String(auction.seller?._id || auction.seller);
   const ended = new Date(auction.endDate).getTime() <= Date.now() || auction.status !== "active";
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const body = { amount: Number(amount) };
-      if (autoBid && maxAutoBid) body.maxAutoBid = Number(maxAutoBid);
-      const res = await api.post(`/auctions/${auction._id}/bid`, body);
+      const res = await api.post(`/auctions/${auction._id}/bid`, { amount: Number(amount) });
       return res.data.data;
     },
     onSuccess: (data) => {
@@ -93,25 +89,6 @@ export default function BidPanel({ auction }) {
               <Button type="button" variant="outline" size="icon" onClick={() => setAmount((a) => Number(a) + step)}>+</Button>
             </div>
           </div>
-
-          <button type="button" onClick={() => setAutoBid((v) => !v)} className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
-            <span className="flex items-center gap-2 font-medium"><Zap className="size-4 text-accent" /> {locale === "bn" ? "অটো-বিড" : "Auto-bid"}</span>
-            <span className={`relative h-5 w-9 rounded-full transition-colors ${autoBid ? "bg-primary" : "bg-muted-foreground/30"}`}>
-              <span className={`absolute top-0.5 size-4 rounded-full bg-white transition-transform ${autoBid ? "translate-x-4" : "translate-x-0.5"}`} />
-            </span>
-          </button>
-
-          {autoBid && (
-            <div className="space-y-1.5">
-              <Label htmlFor="maxAutoBid">{locale === "bn" ? "সর্বোচ্চ সীমা" : "Maximum limit"} (৳)</Label>
-              <Input id="maxAutoBid" type="number" min={minNext} value={maxAutoBid} onChange={(e) => setMaxAutoBid(e.target.value)} placeholder={String(minNext + step * 10)} />
-              <p className="text-xs text-muted-foreground">
-                {locale === "bn"
-                  ? "সিস্টেম স্বয়ংক্রিয়ভাবে এই সীমা পর্যন্ত বিড বাড়াবে।"
-                  : "We'll automatically bid up to this limit on your behalf."}
-              </p>
-            </div>
-          )}
 
           <Button type="submit" className="w-full" size="lg" disabled={mutation.isPending}>
             {mutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Gavel className="size-4" />}
