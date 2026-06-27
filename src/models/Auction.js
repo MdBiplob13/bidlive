@@ -44,6 +44,7 @@ const auctionSchema = new Schema(
     startingPrice: { type: Number, required: true, min: 0 },
     reservePrice: { type: Number, default: 0 }, // 0 = no reserve
     bidIncrement: { type: Number, default: 0 }, // 0 = auto-tiered
+    commissionRate: { type: Number, default: 0.05, min: 0, max: 1 }, // site fee commission rate
     currentBid: { type: Number, default: 0 },
     bidCount: { type: Number, default: 0 },
 

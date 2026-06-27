@@ -15,7 +15,8 @@ const userSchema = new Schema(
       index: true,
     },
     password: { type: String, required: true, select: false },
-    role: { type: String, enum: ["user", "admin"], default: "user", index: true },
+    role: { type: String, enum: ["user", "admin", "employee"], default: "user", index: true },
+    permissions: { type: [String], default: [] },
     status: {
       type: String,
       enum: ["active", "suspended", "banned"],

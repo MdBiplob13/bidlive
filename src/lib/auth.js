@@ -51,3 +51,13 @@ export async function requireAdmin() {
   if (user.role !== "admin") throw new AuthError("Admin access required", 403);
   return user;
 }
+
+/** Throw if the user doesn't have the required permission. Admins automatically pass. */
+export async function requirePermission(permission) {
+  const user = await requireUser();
+  if (user.role === "admin") return user;
+  if (user.role === "employee" && user.permissions?.includes(permission)) {
+    return user;
+  }
+  throw new AuthError(`Access denied: Requires permission '${permission}'`, 403);
+}

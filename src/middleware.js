@@ -25,21 +25,24 @@ export function middleware(req) {
 
   const isAuthed = !!payload?.id;
   const isAdmin = payload?.role === "admin";
+  const isEmployee = payload?.role === "employee";
 
   // Protected user areas
   if (pathname.startsWith("/dashboard")) {
     if (!isAuthed) return redirectToLogin(req);
+    if (isAdmin || isEmployee) return NextResponse.redirect(new URL("/admin", req.url));
   }
 
   // Admin area
   if (pathname.startsWith("/admin")) {
     if (!isAuthed) return redirectToLogin(req);
-    if (!isAdmin) return NextResponse.redirect(new URL("/", req.url));
+    if (!isAdmin && !isEmployee) return NextResponse.redirect(new URL("/", req.url));
   }
 
   // Logged-in users shouldn't see auth pages
   if ((pathname === "/login" || pathname === "/register") && isAuthed) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    const target = isAdmin || isEmployee ? "/admin" : "/dashboard";
+    return NextResponse.redirect(new URL(target, req.url));
   }
 
   return NextResponse.next();

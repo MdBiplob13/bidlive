@@ -30,9 +30,18 @@ function LoginForm() {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/login", values);
-      setUser(data.data.user);
+      const loggedUser = data.data.user;
+      setUser(loggedUser);
       toast.success(t("auth.loginCta") + " ✓");
-      router.push(next);
+      if (loggedUser.role === "admin") {
+        router.push("/admin");
+      } else if (loggedUser.role === "employee") {
+        const hasActivePermissions = Array.isArray(loggedUser.permissions) && loggedUser.permissions.length > 0;
+        const nextTarget = next?.startsWith("/admin") ? next : "/admin";
+        router.push(hasActivePermissions ? nextTarget : "/dashboard");
+      } else {
+        router.push(next);
+      }
       router.refresh();
     } catch (e) {
       toast.error(e.message);

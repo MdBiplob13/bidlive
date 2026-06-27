@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Gavel, Flag, FileText, ScrollText,
-  ShieldCheck, Menu, X, Home, Tags, TrendingUp,
+  ShieldCheck, Menu, X, Home, Tags, TrendingUp, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthProvider";
@@ -14,20 +14,27 @@ import LanguageToggle from "@/components/common/LanguageToggle";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/auctions", label: "Auctions", icon: Gavel },
-  { href: "/admin/bids", label: "Bids", icon: TrendingUp },
-  { href: "/admin/categories", label: "Categories", icon: Tags },
-  { href: "/admin/reports", label: "Reports", icon: Flag },
-  { href: "/admin/requests", label: "Requests", icon: FileText },
-  { href: "/admin/logs", label: "Logs", icon: ScrollText },
+  { href: "/admin/users", label: "Users", icon: Users, permission: "manage_users" },
+  { href: "/admin/employees", label: "Employees", icon: ShieldCheck, permission: "admin_only" },
+  { href: "/admin/wallets", label: "Wallets", icon: Wallet, permission: "manage_wallets" },
+  { href: "/admin/auctions", label: "Auctions", icon: Gavel, permission: "manage_auctions" },
+  { href: "/admin/bids", label: "Bids", icon: TrendingUp, permission: "manage_auctions" },
+  { href: "/admin/categories", label: "Categories", icon: Tags, permission: "manage_categories" },
+  { href: "/admin/reports", label: "Reports", icon: Flag, permission: "view_reports" },
+  { href: "/admin/requests", label: "Requests", icon: FileText, permission: "manage_auctions" },
+  { href: "/admin/logs", label: "Logs", icon: ScrollText, permission: "admin_only" },
 ];
 
-function NavList({ onNavigate }) {
+function NavList({ user, onNavigate }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-1">
-      {NAV.map((item) => {
+      {NAV.filter((item) => {
+        if (user?.role === "admin") return true;
+        if (!item.permission) return true;
+        if (item.permission === "admin_only") return false;
+        return user?.permissions?.includes(item.permission);
+      }).map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         return (
           <Link key={item.href} href={item.href} onClick={onNavigate}
@@ -68,13 +75,13 @@ export default function AdminShell({ children }) {
 
       <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6">
         <aside className="hidden w-56 shrink-0 lg:block">
-          <div className="sticky top-20 rounded-xl border border-border bg-card p-3 shadow-card"><NavList /></div>
+          <div className="sticky top-20 rounded-xl border border-border bg-card p-3 shadow-card"><NavList user={user} /></div>
         </aside>
         {open && (
           <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setOpen(false)}>
             <div className="absolute inset-0 bg-black/40" />
             <aside className="absolute left-0 top-0 h-full w-64 bg-card p-4" onClick={(e) => e.stopPropagation()}>
-              <NavList onNavigate={() => setOpen(false)} />
+              <NavList user={user} onNavigate={() => setOpen(false)} />
             </aside>
           </div>
         )}

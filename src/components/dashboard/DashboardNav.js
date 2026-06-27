@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Gavel, Plus, Heart, ShoppingBag, MessageSquare,
-  Bell, User, FileText, ShieldCheck, Home,
+  Bell, User, FileText, ShieldCheck, Home, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -19,6 +19,7 @@ export default function DashboardNav({ onNavigate }) {
     { href: "/dashboard/auctions", label: t("nav.myAuctions"), icon: Gavel },
     { href: "/dashboard/auctions/new", label: t("nav.sell"), icon: Plus },
     { href: "/dashboard/bids", label: t("nav.myBids"), icon: Gavel },
+    { href: "/dashboard/wallet", label: t("nav.wallet"), icon: Wallet },
     { href: "/dashboard/watchlist", label: t("nav.watchlist"), icon: Heart },
     { href: "/dashboard/orders", label: t("nav.orders"), icon: ShoppingBag },
     { href: "/dashboard/messages", label: t("nav.messages"), icon: MessageSquare },

@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Gavel, TrendingUp, ShoppingBag, Clock, Flag, BadgeCheck, Banknote } from "lucide-react";
+import { Users, Gavel, TrendingUp, ShoppingBag, Clock, Flag, BadgeCheck, Banknote, FileText } from "lucide-react";
 import api from "@/lib/api";
 import { formatTaka } from "@/lib/currency";
 import PageHeader from "@/components/dashboard/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/context/AuthProvider";
 
 function Stat({ icon: Icon, label, value, accent, href }) {
   const Comp = href ? Link : "div";
@@ -22,11 +23,55 @@ function Stat({ icon: Icon, label, value, accent, href }) {
   );
 }
 
+function EmployeeDashboard({ permissions }) {
+  const cards = [
+    { label: "Auctions", href: "/admin/auctions", permission: "manage_auctions", icon: Gavel },
+    { label: "Requests", href: "/admin/requests", permission: "manage_auctions", icon: FileText },
+    { label: "Bids", href: "/admin/bids", permission: "manage_auctions", icon: TrendingUp },
+    { label: "Wallets", href: "/admin/wallets", permission: "manage_wallets", icon: ShoppingBag },
+    { label: "Reports", href: "/admin/reports", permission: "view_reports", icon: Flag },
+    { label: "Users", href: "/admin/users", permission: "manage_users", icon: Users },
+    { label: "Categories", href: "/admin/categories", permission: "manage_categories", icon: BadgeCheck },
+  ];
+
+  const permittedCards = cards.filter((card) => permissions?.includes(card.permission));
+
+  return (
+    <div>
+      <PageHeader title="Staff Dashboard" subtitle="Your assigned admin tools" />
+      <p className="text-sm text-muted-foreground">Use the menu and cards below to access sections permitted by your administrator.</p>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {permittedCards.length > 0 ? (
+          permittedCards.map((card) => (
+            <Link key={card.href} href={card.href} className="rounded-xl border border-border bg-card p-6 shadow-card transition-colors hover:border-primary/40">
+              <div className="flex items-center gap-3">
+                <card.icon className="size-6 text-primary" />
+                <h2 className="font-bold">{card.label}</h2>
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">Open the assigned section to manage its content.</p>
+            </Link>
+          ))
+        ) : (
+          <div className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+            You do not have any active admin permissions yet. Please contact an administrator to request access.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "stats"],
     queryFn: async () => (await api.get("/admin/stats")).data.data.stats,
+    enabled: user?.role === "admin",
   });
+
+  if (user?.role === "employee") {
+    return <EmployeeDashboard permissions={user.permissions} />;
+  }
 
   if (isLoading) {
     return (
