@@ -1,28 +1,47 @@
-import { cookies } from "next/headers";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import { registerSchema } from "@/lib/validations";
-import { signToken } from "@/lib/jwt";
-import { buildAuthCookie } from "@/lib/cookies";
 import { created, fail, handler } from "@/lib/apiResponse";
 import { rateLimit, clientKey } from "@/lib/rateLimit";
+import { generateOtpCode, hashOtpCode } from "@/lib/otp";
+import { sendOtpSms } from "@/lib/sms";
 
 export const POST = handler(async (req) => {
   const rl = rateLimit({ key: clientKey(req, "register"), limit: 5, windowMs: 60000 });
   if (!rl.ok) return fail("Too many attempts. Please wait a moment.", 429);
 
-  const json = await req.json();
+  const json = await req.json().catch(() => ({}));
   const { name, phone, password } = registerSchema.parse(json);
 
   await connectDB();
   const exists = await User.findOne({ phone });
   if (exists) return fail("This phone number is already registered", 409);
 
-  const user = await User.create({ name, phone, password });
-  const token = signToken({ id: String(user._id), role: user.role });
+  const user = await User.create({
+    name,
+    phone,
+    password,
+    status: "pending_verification",
+    isPhoneVerified: false,
+    isVerified: false,
+  });
+  const otpCode = generateOtpCode();
+  const otpHash = await hashOtpCode(otpCode);
 
-  const c = buildAuthCookie(token);
-  (await cookies()).set(c.name, c.value, c.options);
+  user.otpHash = otpHash;
+  user.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+  user.otpAttempts = 0;
+  user.otpLockedUntil = null;
+  user.otpResendCount = 0;
+  user.lastOtpSentAt = new Date();
+  await user.save();
 
-  return created({ user: user.toPublic() });
+  await sendOtpSms(user.phone, otpCode);
+
+  return created({
+    user: user.toPublic(),
+    requiresVerification: true,
+    phone: user.phone,
+    mode: "signup",
+  });
 });

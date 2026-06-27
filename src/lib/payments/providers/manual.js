@@ -1,4 +1,4 @@
-import { PaymentProvider } from "../paymentManager";
+import { PaymentProvider } from "../paymentProvider";
 
 export class ManualPaymentProvider extends PaymentProvider {
   async initiatePayment({ transactionId, amount }) {

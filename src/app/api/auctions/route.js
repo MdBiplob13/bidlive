@@ -67,6 +67,10 @@ export const GET = handler(async (req) => {
 // POST /api/auctions — create (pending approval)
 export const POST = handler(async (req) => {
   const user = await requireUser();
+  if (user.kycStatus !== "approved") {
+    return fail("KYC approval is required before creating auctions.", 403);
+  }
+
   const json = await req.json();
   const data = auctionSchema.parse(json);
 

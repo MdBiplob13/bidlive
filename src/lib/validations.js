@@ -34,6 +34,17 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const otpRequestSchema = z.object({
+  phone: bdPhone.optional(),
+  resend: z.coerce.boolean().optional(),
+});
+
+export const verifyOtpSchema = z.object({
+  phone: bdPhone.optional(),
+  code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit verification code"),
+  mode: z.enum(["signup", "login"]).optional(),
+});
+
 export const auctionSchema = z.object({
   title: z.string().trim().min(4, "Title is too short").max(120),
   description: z.string().trim().min(10, "Description is too short").max(5000),

@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Gavel, Plus, Heart, ShoppingBag, MessageSquare,
-  Bell, User, FileText, ShieldCheck, Home, Wallet,
+  LayoutDashboard, Gavel, Plus, Heart, MessageSquare,
+  Bell, User, ShieldCheck, Home, Wallet, Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -20,12 +20,12 @@ export default function DashboardNav({ onNavigate }) {
     { href: "/dashboard/auctions/new", label: t("nav.sell"), icon: Plus },
     { href: "/dashboard/bids", label: t("nav.myBids"), icon: Gavel },
     { href: "/dashboard/wallet", label: t("nav.wallet"), icon: Wallet },
+    { href: "/dashboard/rankings", label: "Rankings", icon: Trophy },
     { href: "/dashboard/watchlist", label: t("nav.watchlist"), icon: Heart },
-    { href: "/dashboard/orders", label: t("nav.orders"), icon: ShoppingBag },
     { href: "/dashboard/messages", label: t("nav.messages"), icon: MessageSquare },
     { href: "/dashboard/notifications", label: t("nav.notifications"), icon: Bell },
-    { href: "/dashboard/requests", label: "Requests", icon: FileText },
     { href: "/dashboard/profile", label: t("nav.profile"), icon: User },
+    { href: "/dashboard/profile/kyc", label: "KYC", icon: ShieldCheck },
   ];
 
   const isActive = (item) =>

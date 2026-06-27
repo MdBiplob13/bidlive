@@ -20,6 +20,10 @@ export default function ProfilePage() {
   const { t, locale } = useLanguage();
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
   const [uploading, setUploading] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpPending, setOtpPending] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   useEffect(() => {
     if (user) reset({ name: user.name, email: user.email, city: user.city, address: user.address });
@@ -50,9 +54,70 @@ export default function ProfilePage() {
     }
   };
 
+  const sendOtp = async () => {
+    setSendingOtp(true);
+    try {
+      await api.post("/auth/send-otp", { phone: user?.phone, resend: true });
+      setOtpPending(true);
+      toast.success(locale === "bn" ? "OTP পাঠানো হয়েছে" : "OTP sent");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    setVerifyingOtp(true);
+    try {
+      await api.post("/auth/verify-otp", { code: otpCode.trim(), phone: user?.phone });
+      await refresh();
+      setOtpCode("");
+      setOtpPending(false);
+      toast.success(locale === "bn" ? "ফোন যাচাইকরণ সম্পন্ন" : "Phone verified");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
   return (
     <div className="max-w-xl">
       <PageHeader title={t("nav.profile")} />
+
+      <div className="mb-6 rounded-xl border border-border bg-card p-6 shadow-card">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">{locale === "bn" ? "ফোন যাচাইকরণ" : "Phone verification"}</p>
+            <p className="text-lg font-semibold">{user?.isVerified ? (locale === "bn" ? "যাচাইকৃত" : "Verified") : (locale === "bn" ? "অযাচাইকৃত" : "Unverified")}</p>
+          </div>
+          {!user?.isVerified ? (
+            <Button onClick={sendOtp} disabled={sendingOtp}>
+              {sendingOtp ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+              {locale === "bn" ? "OTP পাঠান" : "Send OTP"}
+            </Button>
+          ) : null}
+        </div>
+
+        {!user?.isVerified && otpPending && (
+          <div className="mt-5 space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="otpCode">{locale === "bn" ? "OTP কোড" : "OTP code"}</Label>
+              <Input id="otpCode" value={otpCode} onChange={(e) => setOtpCode(e.target.value)} />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={verifyOtp} disabled={!otpCode.trim() || verifyingOtp}>
+                {verifyingOtp ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                {locale === "bn" ? "যাচাই করুন" : "Verify"}
+              </Button>
+              <Button variant="outline" onClick={sendOtp} disabled={sendingOtp}>
+                {locale === "bn" ? "পুনরায় পাঠান" : "Resend"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Avatar */}
       <div className="mb-4 flex items-center gap-4 rounded-xl border border-border bg-card p-6 shadow-card">

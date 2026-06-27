@@ -38,24 +38,28 @@ export default function StatsSection({ stats }) {
   ];
 
   return (
-    <section className="bg-primary py-14 text-primary-foreground">
-      <div className="container-tight grid grid-cols-2 gap-8 lg:grid-cols-4">
-        {data.map((d, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: i * 0.08 }}
-            className="flex flex-col items-center gap-2 text-center"
-          >
-            <d.icon className="size-8 opacity-90" />
-            <span className="text-3xl font-extrabold tabular-nums sm:text-4xl">
-              <Counter to={d.value} locale={locale} />
-            </span>
-            <span className="text-sm opacity-90">{d.label}</span>
-          </motion.div>
-        ))}
+    <section className="bg-primary/5 py-16 sm:py-20">
+      <div className="container-tight">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {data.map((d, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              className="rounded-[2rem] border border-border bg-card p-8 text-center shadow-soft"
+            >
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-primary/10 text-primary">
+                <d.icon className="size-7" />
+              </div>
+              <span className="mt-4 block text-3xl font-extrabold tabular-nums sm:text-4xl">
+                <Counter to={d.value} locale={locale} />
+              </span>
+              <span className="mt-2 block text-sm text-muted-foreground">{d.label}</span>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );

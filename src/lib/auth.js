@@ -42,6 +42,9 @@ export async function requireUser() {
   if (!user) throw new AuthError("Authentication required", 401);
   if (user.status === "banned") throw new AuthError("Account is banned", 403);
   if (user.status === "suspended") throw new AuthError("Account is suspended", 403);
+  if (user.status === "pending_verification" || !user.isPhoneVerified) {
+    throw new AuthError("Please verify your phone number before continuing", 403);
+  }
   return user;
 }
 

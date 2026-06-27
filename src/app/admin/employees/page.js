@@ -118,7 +118,7 @@ export default function AdminEmployeesPage() {
 
         {employees.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground text-sm">
-            No employee staff profiles found. Click "Add Employee" to create one.
+            No employee staff profiles found. Click &quot;Add Employee&quot; to create one.
           </div>
         ) : (
           <div className="overflow-x-auto">

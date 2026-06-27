@@ -20,12 +20,12 @@ export default function Footer() {
       title: t("nav.categories"),
       links: [
         { href: "/auctions?category=mobile", label: locale === "bn" ? "মোবাইল" : "Mobile" },
-        { href: "/auctions?category=cars", label: "Cars" },
-        { href: "/auctions?category=electronics", label: "Electronics" },
+        { href: "/auctions?category=cars", label: locale === "bn" ? "গাড়ি" : "Cars" },
+        { href: "/auctions?category=electronics", label: locale === "bn" ? "ইলেকট্রনিক্স" : "Electronics" },
       ],
     },
     {
-      title: "Legal",
+      title: t("footer.legal"),
       links: [
         { href: "/terms", label: t("footer.terms") },
         { href: "/privacy", label: t("footer.privacy") },

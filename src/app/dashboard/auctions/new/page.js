@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "@/context/AuthProvider";
 import toast from "react-hot-toast";
 import { Loader2, Plus, X, Upload, Link2 } from "lucide-react";
 import { auctionSchema } from "@/lib/validations";
@@ -30,6 +32,7 @@ const CATEGORIES = [
 
 export default function NewAuctionPage() {
   const { t, locale } = useLanguage();
+  const { user } = useAuth();
   const router = useRouter();
   const [images, setImages] = useState([]);
   const [urlInput, setUrlInput] = useState("");
@@ -64,7 +67,12 @@ export default function NewAuctionPage() {
     }
   };
 
+  const canCreateAuction = user?.kycStatus === "approved";
+
   const onSubmit = async (values) => {
+    if (!canCreateAuction) {
+      return toast.error(locale === "bn" ? "প্রথমে KYC অনুমোদন করুন" : "Please complete KYC approval first.");
+    }
     if (images.length === 0) return toast.error(locale === "bn" ? "অন্তত একটি ছবি দিন" : "Add at least one image");
     try {
       const payload = { ...values, images };
@@ -79,6 +87,22 @@ export default function NewAuctionPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader title={locale === "bn" ? "নতুন নিলাম তৈরি করুন" : "Create a new auction"} subtitle={locale === "bn" ? "অ্যাডমিন অনুমোদনের পর লাইভ হবে" : "Goes live after admin approval"} />
+
+      {user?.kycStatus !== "approved" ? (
+        <div className="rounded-xl border border-warning/50 bg-warning/10 p-6 text-sm text-warning-foreground shadow-sm">
+          <p className="mb-3 font-semibold">{locale === "bn" ? "KYC অনুমোদন প্রয়োজন" : "KYC approval required"}</p>
+          <p className="text-muted-foreground">
+            {locale === "bn"
+              ? "নতুন নিলাম পোস্ট করার আগে আপনার KYC গৃহীত হতে হবে। অনুগ্রহ করে প্রোফাইল থেকে KYC সম্পন্ন করুন।"
+              : "Your KYC must be approved before posting new auctions. Please complete verification from your profile."}
+          </p>
+          <div className="mt-4">
+            <Link href="/dashboard/profile/kyc" className="inline-flex items-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-white hover:bg-warning/90">
+              {locale === "bn" ? "KYC পেজে যান" : "Go to KYC page"}
+            </Link>
+          </div>
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 rounded-xl border border-border bg-card p-5 shadow-card sm:p-6">
         <div className="space-y-1.5">
@@ -147,9 +171,9 @@ export default function NewAuctionPage() {
                   </>
                 ) : (
                   <>
-                    The reserve price is a hidden minimum you're willing to accept. If bidding ends below it, the item won't sell.
+                    The reserve price is a hidden minimum you&apos;re willing to accept. If bidding ends below it, the item won&apos;t sell.
                     <br /><br />
-                    It's optional — leave it empty or 0 for no reserve, meaning the highest bidder always wins.
+                    It&apos;s optional — leave it empty or 0 for no reserve, meaning the highest bidder always wins.
                   </>
                 )}
               </HelpPopover>

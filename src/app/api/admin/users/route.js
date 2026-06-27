@@ -53,6 +53,14 @@ export const PATCH = handler(async (req) => {
     case "makeAdmin":
       user.role = "admin";
       break;
+    case "approveKyc":
+      user.kycStatus = "approved";
+      user.kycNotes = reason || "KYC approved by admin.";
+      break;
+    case "rejectKyc":
+      user.kycStatus = "rejected";
+      user.kycNotes = reason || "KYC rejected by admin.";
+      break;
     case "delete":
       await user.deleteOne();
       await logAdmin({ admin: admin._id, action: "user.delete", targetType: "user", targetId: userId, note: reason });

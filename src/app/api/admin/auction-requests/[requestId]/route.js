@@ -7,6 +7,7 @@ import Auction from "@/models/Auction";
 import Bid from "@/models/Bid";
 import { runInTransaction, releaseBiddingFunds } from "@/lib/wallet/walletService";
 import { notify } from "@/lib/notify";
+import { normalizeRequestedChanges } from "@/lib/auctionRequests";
 
 // POST /api/admin/auction-requests/:requestId — Resolve a change or cancellation request
 export const POST = handler(async (req, { params }) => {
@@ -58,9 +59,9 @@ export const POST = handler(async (req, { params }) => {
             "reservePrice",
             "endDate",
           ];
-          const changes = request.requestedChanges;
-          if (changes) {
-            for (const [key, value] of changes.entries()) {
+          const changes = normalizeRequestedChanges(request.requestedChanges);
+          if (changes && typeof changes === "object") {
+            for (const [key, value] of Object.entries(changes)) {
               if (editable.includes(key)) {
                 if (key === "endDate") {
                   auction.endDate = new Date(value);
@@ -84,6 +85,12 @@ export const POST = handler(async (req, { params }) => {
 
       return { request, auction };
     });
+
+    const serializedRequest = {
+      ...result.request.toObject(),
+      _id: String(result.request._id),
+      requestedChanges: normalizeRequestedChanges(result.request.requestedChanges),
+    };
 
     // Notify user
     await notify({
@@ -110,10 +117,7 @@ export const POST = handler(async (req, { params }) => {
 
     return ok({
       message: `Auction request has been successfully ${action}ed.`,
-      request: {
-        ...result.request.toObject(),
-        _id: String(result.request._id),
-      },
+      request: serializedRequest,
     });
   } catch (error) {
     return fail(error.message, 400);

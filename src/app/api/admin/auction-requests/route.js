@@ -4,6 +4,7 @@ import { ok, handler } from "@/lib/apiResponse";
 import AuctionRequest from "@/models/AuctionRequest";
 import User from "@/models/User"; // Registers user schema
 import Auction from "@/models/Auction"; // Registers auction schema
+import { normalizeRequestedChanges } from "@/lib/auctionRequests";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,10 @@ export const GET = handler(async (req) => {
   await requirePermission("manage_auctions");
   await connectDB();
 
-  const requests = await AuctionRequest.find({})
+  const requests = await AuctionRequest.find({ status: "pending" })
     .populate("user", "name phone")
     .populate("auction", "title status seller highestBidder currentBid")
-    .sort({ status: 1, createdAt: -1 }) // Pending first, then newest
+    .sort({ createdAt: -1 })
     .lean();
 
   return ok({
@@ -25,6 +26,7 @@ export const GET = handler(async (req) => {
       user: r.user ? { ...r.user, _id: String(r.user._id) } : null,
       auction: r.auction ? { ...r.auction, _id: String(r.auction._id) } : null,
       resolvedBy: r.resolvedBy ? String(r.resolvedBy) : null,
+      requestedChanges: normalizeRequestedChanges(r.requestedChanges),
     })),
   });
 });

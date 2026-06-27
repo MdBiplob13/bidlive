@@ -4,16 +4,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {
   FileText,
-  Gavel,
   CheckCircle,
   XCircle,
-  HelpCircle,
-  Clock,
   ChevronRight,
-  Eye,
   Info,
   Loader2,
-  Phone,
   User,
   AlertCircle,
 } from "lucide-react";
@@ -23,6 +18,7 @@ import { formatTaka } from "@/lib/currency";
 import PageHeader from "@/components/dashboard/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -36,7 +32,7 @@ const REJECTION_REASONS = [
 export default function AdminRequestsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState("buyer"); // buyer, seller
+  const [activeTab, setActiveTab] = useState("seller"); // seller, kyc, withdraw
 
   // Review modal state
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -46,14 +42,9 @@ export default function AdminRequestsPage() {
 
   // Check operator permissions (avoid hardcoded role checks)
   const isAuthorized =
-    user?.role === "admin" || user?.permissions?.includes("manage_auctions");
-
-  // Fetch Buyer Requests
-  const { data: buyerRequests, isLoading: loadingBuyer } = useQuery({
-    queryKey: ["admin", "buyer-requests"],
-    queryFn: async () => (await api.get("/requests?scope=open")).data.data.requests,
-    enabled: activeTab === "buyer",
-  });
+    user?.role === "admin" ||
+    user?.permissions?.includes("manage_auctions") ||
+    user?.permissions?.includes("manage_wallets");
 
   // Fetch Seller Auction Requests
   const { data: sellerRequests, isLoading: loadingSeller } = useQuery({
@@ -62,13 +53,38 @@ export default function AdminRequestsPage() {
     enabled: activeTab === "seller" && isAuthorized,
   });
 
+  // Fetch KYC Requests
+  const { data: kycRequests, isLoading: loadingKyc } = useQuery({
+    queryKey: ["admin", "kyc-requests"],
+    queryFn: async () => (await api.get("/admin/kyc-requests")).data.data.requests,
+    enabled: activeTab === "kyc" && isAuthorized,
+  });
+
+  // Fetch pending withdrawal requests from admin wallet transactions
+  const { data: withdrawRequests, isLoading: loadingWithdrawals } = useQuery({
+    queryKey: ["admin", "withdraw-requests"],
+    queryFn: async () => {
+      const res = await api.get("/admin/wallets");
+      return res.data.data.transactions.filter((txn) => txn.type === "withdrawal" && txn.status === "pending");
+    },
+    enabled: activeTab === "withdraw" && isAuthorized,
+  });
+
   const resolveMutation = useMutation({
-    mutationFn: async ({ requestId, payload }) => {
+    mutationFn: async ({ requestId, payload, type }) => {
+      if (type === "kyc") {
+        return (await api.patch("/admin/users", payload)).data.data;
+      }
+      if (type === "withdraw") {
+        return (await api.post(`/admin/transactions/${requestId}`, payload)).data.data;
+      }
       const res = await api.post(`/admin/auction-requests/${requestId}`, payload);
       return res.data.data;
     },
     onSuccess: (d) => {
       qc.invalidateQueries({ queryKey: ["admin", "seller-requests"] });
+      qc.invalidateQueries({ queryKey: ["admin", "kyc-requests"] });
+      qc.invalidateQueries({ queryKey: ["admin", "withdraw-requests"] });
       toast.success(d.message || "Request resolved successfully.");
       setSelectedRequest(null);
       setAdminNote("");
@@ -77,13 +93,13 @@ export default function AdminRequestsPage() {
     onError: (err) => toast.error(err.message),
   });
 
-  if (activeTab === "seller" && !isAuthorized) {
+  if (!isAuthorized) {
     return (
       <div className="py-20 text-center text-destructive flex flex-col items-center gap-2">
         <AlertCircle className="size-10" />
         <p className="font-bold">Access Denied</p>
         <p className="text-sm text-muted-foreground">
-          You do not have the required permissions (`manage_auctions`) to review seller modification requests.
+          You do not have the required permissions to review pending admin requests.
         </p>
       </div>
     );
@@ -98,22 +114,12 @@ export default function AdminRequestsPage() {
             Requests Center
           </h1>
           <p className="text-sm text-muted-foreground">
-            Review buyer sourcing requests and sellers' live auction modification / cancellation requests.
+            Review auction modification/cancellation requests, pending KYC verifications, and withdrawal approvals.
           </p>
         </div>
 
         {/* Tab Selection */}
         <div className="flex rounded-xl bg-muted p-1 border border-border shrink-0 self-start">
-          <button
-            onClick={() => setActiveTab("buyer")}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
-              activeTab === "buyer"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Buyer Requests
-          </button>
           <button
             onClick={() => setActiveTab("seller")}
             className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
@@ -122,58 +128,42 @@ export default function AdminRequestsPage() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Seller Auction Requests
+            Auction Requests
+          </button>
+          <button
+            onClick={() => setActiveTab("kyc")}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+              activeTab === "kyc"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            KYC Requests
+          </button>
+          <button
+            onClick={() => setActiveTab("withdraw")}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+              activeTab === "withdraw"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Withdrawal Requests
           </button>
         </div>
       </div>
 
-      {/* Tab Contents: Buyer Sourcing Requests */}
-      {activeTab === "buyer" ? (
-        <div className="space-y-4">
-          <PageHeader title="Buyer Sourcing Ads" subtitle="Open requests posted by buyers looking for items." />
-          {loadingBuyer ? (
-            <div className="grid place-items-center py-20"><Loader2 className="size-8 animate-spin text-primary" /></div>
-          ) : !buyerRequests?.length ? (
-            <p className="rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground text-sm">
-              No open buyer requests found.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {buyerRequests.map((r) => (
-                <div key={r._id} className="rounded-xl border border-border bg-card p-5 shadow-card space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-bold text-foreground text-base">{r.title}</p>
-                    <Badge variant="secondary" className="capitalize text-[10px]">{r.status}</Badge>
-                  </div>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{r.description}</p>
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground pt-1.5 border-t border-border/40 mt-3">
-                    <span className="flex items-center gap-1"><User className="size-3.5" /> {r.user?.name}</span>
-                    <span>·</span>
-                    <span>Category: {r.category?.name?.en}</span>
-                    {(r.budgetMin || r.budgetMax) > 0 && (
-                      <>
-                        <span>·</span>
-                        <span className="font-semibold text-primary">Budget: {formatTaka(r.budgetMin)} – {formatTaka(r.budgetMax)}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        /* Tab Contents: Seller Auction Requests */
+      {activeTab === "seller" ? (
         <div className="space-y-4">
           <PageHeader
-            title="Sellers' Auction Requests"
+            title="Auction Requests"
             subtitle="Change or cancellation requests submitted on approved, active auctions."
           />
           {loadingSeller ? (
             <div className="grid place-items-center py-20"><Loader2 className="size-8 animate-spin text-primary" /></div>
           ) : !sellerRequests?.length ? (
             <p className="rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground text-sm">
-              No pending seller requests found.
+              No pending auction requests found.
             </p>
           ) : (
             <div className="space-y-3">
@@ -196,7 +186,7 @@ export default function AdminRequestsPage() {
                       Seller: {r.user?.name} ({r.user?.phone})
                     </p>
                     <p className="text-xs text-muted-foreground italic max-w-xl">
-                      "Reason: {r.reason}"
+                      Reason: {r.reason}
                     </p>
                   </div>
 
@@ -214,10 +204,93 @@ export default function AdminRequestsPage() {
                       {r.status}
                     </Badge>
                     {r.status === "pending" && (
-                      <Button size="sm" onClick={() => setSelectedRequest(r)}>
+                      <Button size="sm" onClick={() => setSelectedRequest({ ...r, requestType: "auction" })}>
                         Review Request <ChevronRight className="ml-1 size-4" />
                       </Button>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : activeTab === "kyc" ? (
+        <div className="space-y-4">
+          <PageHeader
+            title="KYC Requests"
+            subtitle="Users who submitted NID verification and are awaiting approval."
+          />
+          {loadingKyc ? (
+            <div className="grid place-items-center py-20"><Loader2 className="size-8 animate-spin text-primary" /></div>
+          ) : !kycRequests?.length ? (
+            <p className="rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground text-sm">
+              No pending KYC requests found.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {kycRequests.map((u) => (
+                <div key={u._id} className="rounded-xl border border-border bg-card p-5 shadow-card flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="warning" className="text-[10px] capitalize">
+                        KYC Request
+                      </Badge>
+                      <span className="font-mono text-xs text-muted-foreground">#{u._id.slice(-6)}</span>
+                    </div>
+                    <p className="font-bold text-foreground text-base leading-tight">{u.name}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{u.phone}</p>
+                    <p className="text-xs text-muted-foreground">{u.city || "City not provided"}</p>
+                    <p className="text-xs text-muted-foreground italic max-w-xl">{u.address || "No address provided."}</p>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+                    <Badge variant="warning" className="capitalize">pending</Badge>
+                    <Button size="sm" onClick={() => setSelectedRequest({ ...u, requestType: "kyc" })}>
+                      Review Request <ChevronRight className="ml-1 size-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <PageHeader
+            title="Withdrawal Requests"
+            subtitle="Pending withdrawal approvals that need admin review."
+          />
+          {loadingWithdrawals ? (
+            <div className="grid place-items-center py-20"><Loader2 className="size-8 animate-spin text-primary" /></div>
+          ) : !withdrawRequests?.length ? (
+            <p className="rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground text-sm">
+              No pending withdrawal requests found.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {withdrawRequests.map((txn) => (
+                <div
+                  key={txn._id}
+                  className="rounded-xl border border-border bg-card p-5 shadow-card flex flex-col justify-between gap-4 sm:flex-row sm:items-center"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="destructive" className="text-[10px] capitalize">
+                        Withdrawal Request
+                      </Badge>
+                      <span className="font-mono text-xs text-muted-foreground">#{txn._id.slice(-6)}</span>
+                    </div>
+                    <p className="font-bold text-foreground text-base leading-tight">{txn.user?.name || "Unknown user"}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{txn.user?.phone || "No phone"}</p>
+                    <p className="text-xs text-muted-foreground">Amount: {formatTaka(txn.amount)}</p>
+                    <p className="text-xs text-muted-foreground italic max-w-xl">Method: {txn.paymentGateway || "Manual"}</p>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+                    <Badge variant="warning" className="capitalize">pending</Badge>
+                    <Button size="sm" onClick={() => setSelectedRequest({ ...txn, requestType: "withdraw" })}>
+                      Review Request <ChevronRight className="ml-1 size-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -232,7 +305,7 @@ export default function AdminRequestsPage() {
           <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-lg font-bold tracking-tight">
-                Review {selectedRequest.type === "cancel" ? "Cancellation" : "Modification"} Request
+                Review {selectedRequest.requestType === "kyc" ? "KYC" : selectedRequest.requestType === "withdraw" ? "Withdrawal" : selectedRequest.type === "cancel" ? "Cancellation" : "Modification"} Request
               </h3>
               <button
                 type="button"
@@ -243,15 +316,54 @@ export default function AdminRequestsPage() {
               </button>
             </div>
 
-            <div className="space-y-1 bg-muted/40 p-4 rounded-xl border border-border text-xs">
-              <p className="font-bold">Auction Details</p>
-              <p>Title: <strong className="text-foreground">{selectedRequest.auction?.title}</strong></p>
-              <p>Current Price: <strong className="text-foreground">{formatTaka(selectedRequest.auction?.currentBid)}</strong></p>
-              <p>Highest Bidder: <strong className="text-foreground">{selectedRequest.auction?.highestBidder ? "Yes" : "None"}</strong></p>
-              <p className="pt-2">Seller Reason for request: <span className="italic">"{selectedRequest.reason}"</span></p>
-            </div>
+            {selectedRequest.requestType === "auction" ? (
+              <div className="space-y-1 bg-muted/40 p-4 rounded-xl border border-border text-xs">
+                <p className="font-bold">Auction Details</p>
+                <p>Title: <strong className="text-foreground">{selectedRequest.auction?.title}</strong></p>
+                <p>Current Price: <strong className="text-foreground">{formatTaka(selectedRequest.auction?.currentBid)}</strong></p>
+                <p>Highest Bidder: <strong className="text-foreground">{selectedRequest.auction?.highestBidder ? "Yes" : "None"}</strong></p>
+                <p className="pt-2">Seller Reason for request: <span className="italic">&quot;{selectedRequest.reason}&quot;</span></p>
+              </div>
+            ) : selectedRequest.requestType === "kyc" ? (
+              <div className="space-y-2 bg-muted/40 p-4 rounded-xl border border-border text-xs">
+                <p className="font-bold">KYC Verification Details</p>
+                <p>Name: <strong className="text-foreground">{selectedRequest.kycName || selectedRequest.name}</strong></p>
+                <p>ID Number: <strong className="text-foreground">{selectedRequest.kycIdNumber || "Not provided"}</strong></p>
+                <p>City: <strong className="text-foreground">{selectedRequest.city || "Not provided"}</strong></p>
+                <p>Address: <strong className="text-foreground">{selectedRequest.address || "Not provided"}</strong></p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {selectedRequest.avatar && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Profile Photo</span>
+                      <img src={selectedRequest.avatar} alt="Profile Photo" className="h-24 w-full rounded object-cover border border-border" />
+                    </div>
+                  )}
+                  {selectedRequest.kycDocumentFront && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">NID Front</span>
+                      <img src={selectedRequest.kycDocumentFront} alt="NID Front" className="h-24 w-full rounded object-cover border border-border" />
+                    </div>
+                  )}
+                  {selectedRequest.kycDocumentBack && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">NID Back</span>
+                      <img src={selectedRequest.kycDocumentBack} alt="NID Back" className="h-24 w-full rounded object-cover border border-border" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 bg-muted/40 p-4 rounded-xl border border-border text-xs">
+                <p className="font-bold">Withdrawal Request Details</p>
+                <p>User: <strong className="text-foreground">{selectedRequest.user?.name || "Unknown"}</strong></p>
+                <p>Phone: <strong className="text-foreground">{selectedRequest.user?.phone || "N/A"}</strong></p>
+                <p>Amount: <strong className="text-foreground">{formatTaka(selectedRequest.amount)}</strong></p>
+                <p>Method: <strong className="text-foreground">{selectedRequest.paymentGateway || "Manual"}</strong></p>
+                <p>Description: <span className="italic">{selectedRequest.description || "No description provided."}</span></p>
+              </div>
+            )}
 
-            {selectedRequest.type === "change" && selectedRequest.requestedChanges && (
+            {selectedRequest.requestType === "auction" && selectedRequest.type === "change" && selectedRequest.requestedChanges && (
               <div className="space-y-2">
                 <p className="text-xs font-bold text-foreground">Requested Modifications</p>
                 <div className="border border-border rounded-xl overflow-hidden divide-y divide-border text-xs">
@@ -271,7 +383,7 @@ export default function AdminRequestsPage() {
               </div>
             )}
 
-            {selectedRequest.type === "cancel" && selectedRequest.auction?.highestBidder && (
+            {selectedRequest.requestType === "auction" && selectedRequest.type === "cancel" && selectedRequest.auction?.highestBidder && (
               <div className="rounded-xl border border-warning/20 bg-warning/5 p-3.5 text-xs text-warning/90 flex gap-2">
                 <Info className="size-4 shrink-0" />
                 <p>
@@ -329,10 +441,18 @@ export default function AdminRequestsPage() {
                 onClick={() =>
                   resolveMutation.mutate({
                     requestId: selectedRequest._id,
-                    payload: {
-                      action: "reject",
-                      adminNote: adminNote || (rejectReasonType === "custom" ? customRejectReason : rejectReasonType),
-                    },
+                    type: selectedRequest.requestType,
+                    payload:
+                      selectedRequest.requestType === "kyc"
+                        ? {
+                            userId: selectedRequest._id,
+                            action: "rejectKyc",
+                            reason: adminNote || (rejectReasonType === "custom" ? customRejectReason : rejectReasonType),
+                          }
+                        : {
+                            action: "reject",
+                            adminNote: adminNote || (rejectReasonType === "custom" ? customRejectReason : rejectReasonType),
+                          },
                   })
                 }
                 disabled={resolveMutation.isPending}
@@ -344,10 +464,18 @@ export default function AdminRequestsPage() {
                 onClick={() =>
                   resolveMutation.mutate({
                     requestId: selectedRequest._id,
-                    payload: {
-                      action: "approve",
-                      adminNote: adminNote || "Approved",
-                    },
+                    type: selectedRequest.requestType,
+                    payload:
+                      selectedRequest.requestType === "kyc"
+                        ? {
+                            userId: selectedRequest._id,
+                            action: "approveKyc",
+                            reason: adminNote || "KYC approved",
+                          }
+                        : {
+                            action: "approve",
+                            adminNote: adminNote || "Approved",
+                          },
                   })
                 }
                 disabled={resolveMutation.isPending}

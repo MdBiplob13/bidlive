@@ -12,29 +12,27 @@ export default function HowItWorks() {
   ];
 
   return (
-    <section className="bg-muted/40 py-14">
+    <section className="bg-muted/50 py-16 sm:py-20">
       <div className="container-tight">
-        <h2 className="mb-10 text-center text-2xl font-extrabold tracking-tight sm:text-3xl">
-          {t("sections.howItWorks")}
-        </h2>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">{t("sections.howItWorks")}</h2>
+        </div>
+
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
           {steps.map((s, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.1 }}
-              className="relative rounded-2xl border border-border bg-card p-6 text-center shadow-card"
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              className="rounded-[2rem] border border-border bg-card p-8 text-center shadow-soft transition hover:-translate-y-1"
             >
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-0.5 text-xs font-bold text-accent-foreground">
-                {i + 1}
-              </span>
-              <span className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-primary/10 text-primary">
                 <s.icon className="size-7" />
-              </span>
-              <h3 className="mb-1.5 text-lg font-bold">{s.title}</h3>
-              <p className="text-sm text-muted-foreground">{s.desc}</p>
+              </div>
+              <h3 className="mt-6 text-lg font-semibold text-foreground">{s.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-muted-foreground">{s.desc}</p>
             </motion.div>
           ))}
         </div>

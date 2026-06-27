@@ -1,7 +1,7 @@
 "use client";
-import { useState, use } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   Wallet as WalletIcon,
@@ -29,7 +29,6 @@ import Link from "next/link";
 
 export default function UserWalletPage() {
   const { t, locale } = useLanguage();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const qc = useQueryClient();
 
@@ -45,12 +44,21 @@ export default function UserWalletPage() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawMethod, setWithdrawMethod] = useState("bkash"); // bkash, nagad, bank
   const [withdrawAccount, setWithdrawAccount] = useState("");
+  const [couponCode, setCouponCode] = useState("");
 
-  // Check URL query parameters for simulated gateway status
-  const isMockGateway = searchParams.get("mockGateway") === "true";
-  const mockProvider = searchParams.get("provider");
-  const mockTxnId = searchParams.get("txnId");
-  const mockAmount = searchParams.get("amount");
+  const [mockParams, setMockParams] = useState({ mockGateway: false, provider: null, txnId: null, amount: null });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setMockParams({
+      mockGateway: params.get("mockGateway") === "true",
+      provider: params.get("provider"),
+      txnId: params.get("txnId"),
+      amount: params.get("amount"),
+    });
+  }, []);
+
+  const { mockGateway, provider: mockProvider, txnId: mockTxnId, amount: mockAmount } = mockParams;
 
   // Fetch wallet and transactions
   const { data: walletData, isLoading, error } = useQuery({
@@ -98,12 +106,25 @@ export default function UserWalletPage() {
   });
 
   // Simulated Webhook triggers
+  const couponMutation = useMutation({
+    mutationFn: async (payload) => {
+      const res = await api.post("/coupons", payload);
+      return res.data.data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["wallet"] });
+      toast.success(data.message || "Coupon applied successfully.");
+      setCouponCode("");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const handleSimulatePayment = (status) => {
     const gatewayTxnId = `${mockProvider === "sslcommerz" ? "SSLC" : "CARD"}-SIM-${mockTxnId}-${Date.now().toString().slice(-4)}`;
     window.location.href = `/api/payments/webhook?status=${status}&txnId=${mockTxnId}&amount=${mockAmount}&provider=${mockProvider}&gatewayTxnId=${gatewayTxnId}`;
   };
 
-  if (isMockGateway) {
+  if (mockGateway) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-muted/20 p-4">
         <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-2xl backdrop-blur-md">
@@ -241,6 +262,35 @@ export default function UserWalletPage() {
           <p className="mt-1 text-xs text-muted-foreground">
             {locale === "bn" ? "মোট ফান্ড (ব্যবহারযোগ্য + লকড)" : "Total assets (Available + Locked)"}
           </p>
+        </div>
+      </div>
+
+      {/* Coupon Redemption */}
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 font-extrabold text-lg">
+              <WalletIcon className="size-5 text-primary" />
+              {locale === "bn" ? "কুপন রিডিম করুন" : "Redeem a coupon"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {locale === "bn" ? "কুপন কোড প্রবেশ করান এবং আপনার ব্যালেন্স দ্রুত বাড়ান।" : "Enter a coupon code to boost your wallet balance."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              placeholder={locale === "bn" ? "কুপন কোড" : "Coupon code"}
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              className="min-w-[220px]"
+            />
+            <Button
+              disabled={!couponCode.trim() || couponMutation.isPending}
+              onClick={() => couponMutation.mutate({ code: couponCode.trim() })}
+            >
+              {couponMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : locale === "bn" ? "প্রয়োগ করুন" : "Apply"}
+            </Button>
+          </div>
         </div>
       </div>
 

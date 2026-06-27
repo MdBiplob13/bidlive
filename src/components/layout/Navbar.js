@@ -99,26 +99,22 @@ export default function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard"><LayoutDashboard /> {t("nav.dashboard")}</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/bids"><Gavel /> {t("nav.myBids")}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/watchlist"><Heart /> {t("nav.watchlist")}</Link>
-                </DropdownMenuItem>
+                {!isAdmin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/bids"><Gavel /> {t("nav.myBids")}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/watchlist"><Heart /> {t("nav.watchlist")}</Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/messages"><MessageSquare /> {t("nav.messages")}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/notifications"><Bell /> {t("nav.notifications")}</Link>
                 </DropdownMenuItem>
-                {isAdmin && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin"><ShieldCheck /> {t("nav.admin")}</Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="text-destructive focus:bg-destructive/10">
                   <LogOut /> {t("nav.logout")}

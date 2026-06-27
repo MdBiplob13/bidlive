@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 
 const STATUS_VARIANT = { active: "success", suspended: "muted", banned: "destructive" };
+const KYC_VARIANT = { none: "muted", pending: "warning", approved: "success", rejected: "destructive" };
 
 export default function AdminUsersPage() {
   const qc = useQueryClient();
@@ -58,20 +59,22 @@ export default function AdminUsersPage() {
               <th className="p-3 font-medium">Phone</th>
               <th className="p-3 font-medium">Role</th>
               <th className="p-3 font-medium">Status</th>
+              <th className="p-3 font-medium">KYC</th>
               <th className="p-3 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Loading…</td></tr>
             ) : !data?.users?.length ? (
-              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No users found</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No users found</td></tr>
             ) : data.users.map((u) => (
               <tr key={u._id} className="border-b border-border last:border-0">
                 <td className="p-3 font-medium">{u.name}</td>
                 <td className="p-3 text-muted-foreground">{maskPhone(u.phone)}</td>
-                <td className="p-3">{u.role === "admin" ? <Badge variant="accent">admin</Badge> : "user"}</td>
+                <td className="p-3">{u.role === "admin" ? <Badge variant="accent">admin</Badge> : u.role === "employee" ? <Badge variant="secondary">employee</Badge> : "user"}</td>
                 <td className="p-3"><Badge variant={STATUS_VARIANT[u.status]}>{u.status}</Badge></td>
+                <td className="p-3"><Badge variant={KYC_VARIANT[u.kycStatus || "none"]}>{u.kycStatus || "none"}</Badge></td>
                 <td className="p-3">
                   <div className="flex justify-end gap-1">
                     {u.status !== "active" ? (
@@ -79,7 +82,13 @@ export default function AdminUsersPage() {
                     ) : (
                       <Button size="sm" variant="outline" onClick={() => doAction(u, "suspend")} title="Suspend"><Shield className="size-4" /></Button>
                     )}
-                    {u.status !== "banned" && <Button size="sm" variant="outline" onClick={() => doAction(u, "ban")} title="Ban" className="text-destructive"><Ban className="size-4" /></Button>}
+                    {u.kycStatus === "pending" && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => doAction(u, "approveKyc")} title="Approve KYC"><UserCheck className="size-4" /></Button>
+                        <Button size="sm" variant="outline" onClick={() => doAction(u, "rejectKyc")} title="Reject KYC" className="text-destructive"><Ban className="size-4" /></Button>
+                      </>
+                    )}
+                    {u.status !== "banned" && <Button size="sm" variant="outline" onClick={() => doAction(u, "ban")} title="Ban" className="text-destructive"><Trash2 className="size-4" /></Button>}
                     <Button size="sm" variant="outline" onClick={() => doAction(u, "delete")} title="Delete" className="text-destructive"><Trash2 className="size-4" /></Button>
                   </div>
                 </td>

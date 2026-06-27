@@ -22,6 +22,13 @@ export const POST = handler(async (req, { params }) => {
   const { amount, maxAutoBid } = bidSchema.parse(await req.json());
   await connectDB();
 
+  if (!user.isVerified) {
+    return fail("Phone verification is required before placing bids.", 403);
+  }
+  if (user.kycStatus !== "approved") {
+    return fail("KYC approval is required before placing bids.", 403);
+  }
+
   try {
     const { auction, leaderChanged } = await placeBid({
       auctionId: id,

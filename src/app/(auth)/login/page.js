@@ -8,7 +8,6 @@ import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import { loginSchema } from "@/lib/validations";
 import { useLanguage } from "@/i18n/LanguageProvider";
-import { useAuth } from "@/context/AuthProvider";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ import { Label } from "@/components/ui/label";
 
 function LoginForm() {
   const { t } = useLanguage();
-  const { setUser } = useAuth();
   const router = useRouter();
   const next = useSearchParams().get("next") || "/dashboard";
   const [loading, setLoading] = useState(false);
@@ -26,13 +24,32 @@ function LoginForm() {
     defaultValues: { phone: "", password: "" },
   });
 
+  const handleSendOtp = async (phoneNumber) => {
+    if (!phoneNumber) {
+      throw new Error("Phone number is required");
+    }
+
+    const { data } = await api.post("/auth/send-otp", {
+      phone: phoneNumber,
+      resend: false,
+    });
+
+    return data;
+  };
+
   const onSubmit = async (values) => {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/login", values);
-      const loggedUser = data.data.user;
-      setUser(loggedUser);
+      if (data.data.requiresVerification) {
+        await handleSendOtp(data.data.phone || values.phone);
+        toast.success("Verification code sent. Please verify your phone to continue.");
+        router.push(`/verify-otp?phone=${encodeURIComponent(data.data.phone || values.phone)}&mode=login&next=${encodeURIComponent(next)}`);
+        router.refresh();
+        return;
+      }
       toast.success(t("auth.loginCta") + " ✓");
+      const loggedUser = data.data.user;
       if (loggedUser.role === "admin") {
         router.push("/admin");
       } else if (loggedUser.role === "employee") {
