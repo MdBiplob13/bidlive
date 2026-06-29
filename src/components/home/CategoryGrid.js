@@ -33,7 +33,9 @@ export default function CategoryGrid({ categories = [] }) {
                   <span className="grid h-16 w-16 place-items-center rounded-3xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
                     <Icon className="size-7" />
                   </span>
-                  <span className="text-sm font-semibold text-foreground">{c.name[locale] || c.name.en}</span>
+                  <span className="w-full truncate text-sm font-semibold text-foreground" title={c.name[locale] || c.name.en}>
+                    {c.name[locale] || c.name.en}
+                  </span>
                 </Link>
               </motion.div>
             );

@@ -37,8 +37,9 @@ export default function HomeSections({ data }) {
         href="/auctions"
         icon={Gavel}
         auctions={data.featured}
-        limit={3}
-        columns="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
+        limit={5}
+        mobileLimit={4}
+        columns={GRID_5_CARDS}
       />
 
       <section className="w-full bg-muted py-10 sm:py-14">
